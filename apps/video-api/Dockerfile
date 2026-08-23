@@ -9,6 +9,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
+# See apps/capture-api/Dockerfile for why this is needed: some build
+# hosts (observed on Railway) inject a registry/auth config that makes
+# even public `npm ci` calls fail with a 401.
+RUN npm config set registry https://registry.npmjs.org/ \
+    && npm config set always-auth false
+
 COPY package.json package-lock.json* ./
 RUN npm ci --omit=dev || npm install --omit=dev
 
