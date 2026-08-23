@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.png" alt="tool5store — simple tools for brilliant minds" width="480">
+</p>
+
 # tool5store
 
 A monorepo of small, self-hosted API tools — each cheap enough to run for
