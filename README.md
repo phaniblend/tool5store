@@ -8,7 +8,7 @@ under $5/month by leaning on serverless/scale-to-zero hosting.
 | App | Description | Stack | Hosting |
 |---|---|---|---|
 | [`apps/capture-api`](apps/capture-api) | Headless screenshot capture API | Node.js, TypeScript, Playwright, Fastify | Google Cloud Run |
-| `apps/video-api` *(coming next)* | Programmatic video rendering API | Node.js, TypeScript, FFmpeg, Fastify | Modal |
+| [`apps/video-api`](apps/video-api) | Programmatic video rendering API | Node.js, TypeScript, FFmpeg, Fastify | Modal |
 
 Each app is independently deployable — its own `package.json`, `Dockerfile`,
 and README with deploy instructions.
