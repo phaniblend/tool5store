@@ -123,3 +123,28 @@ modal deploy modal_app.py  # persistent URL
 I haven't run this against a live Modal account — verify with `modal
 serve` before trusting `modal deploy`. Point `render.tool5.store` at
 whatever URL Modal gives you.
+
+## Deploy (Railway)
+
+`modal_app.py` isn't needed here — Railway builds and runs the
+[`Dockerfile`](Dockerfile) directly, no Python wrapper required.
+
+This is a monorepo, so as with capture-api, two settings on this
+service's dashboard:
+
+1. **Settings → Source → Root Directory**: set to `apps/video-api`
+2. **Settings → Build**: should now pick up [`railway.json`](railway.json)
+   in this directory, pinned to `DOCKERFILE` — needed for the apt-installed
+   `ffmpeg` + `fonts-dejavu-core` the generic Node buildpack wouldn't include
+
+Also set, on this service:
+- The `S3_*` env vars from [.env.example](.env.example) (or leave unset
+  to use the local-disk fallback, though that's ephemeral on Railway —
+  fine for testing, not for production)
+- `ALLOWED_ORIGINS` if you want browser-based callers
+- A generous request timeout — renders of longer timelines can take a
+  while; Railway's default may be too aggressive for anything beyond a
+  few short clips
+
+Railway injects `PORT` itself, already read from `process.env.PORT` in
+`src/server.ts`.

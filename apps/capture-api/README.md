@@ -82,3 +82,26 @@ Notes:
 - Cloud Run's free tier (180k vCPU-seconds, 2M requests/mo) applies as
   long as you stay within it — min-instances defaults to 0, so idle time
   costs nothing.
+
+## Deploy (Railway)
+
+This is a monorepo — Railway's build system (Railpack) scans the repo
+root by default and won't find anything to build there, since the actual
+app lives in `apps/capture-api`. Two settings fix that, both in the
+Railway dashboard for this service:
+
+1. **Settings → Source → Root Directory**: set to `apps/capture-api`
+2. **Settings → Build**: builder should now pick up
+   [`railway.json`](railway.json) in this directory, which pins it to
+   `DOCKERFILE` — needed because this app requires Playwright's Chromium
+   dependencies that the generic Node buildpack won't install.
+
+Also set, on this service:
+- An adequate memory limit (Chromium is hungry — 1–2GB, same reasoning as
+  the Cloud Run `--memory 2Gi` above; Railway's default hobby-tier limit
+  may be too low and the container will OOM on the first capture)
+- `ALLOWED_ORIGINS` env var if you want browser-based callers (see
+  [.env.example](.env.example))
+
+Railway injects `PORT` itself, which `src/server.ts` already reads from
+`process.env.PORT` — no change needed there.
