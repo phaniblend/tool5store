@@ -11,11 +11,12 @@ under $5/month by leaning on serverless/scale-to-zero hosting.
 
 | App | Description | Stack | Hosting |
 |---|---|---|---|
-| [`apps/capture-api`](apps/capture-api) | Headless screenshot capture API | Node.js, TypeScript, Playwright, Fastify | Google Cloud Run |
-| [`apps/video-api`](apps/video-api) | Programmatic video rendering API | Node.js, TypeScript, FFmpeg, Fastify | Modal |
+| [`apps/capture-api`](apps/capture-api) | Headless screenshot capture API | Node.js, TypeScript, Playwright, Fastify | Google Cloud Run / Railway |
+| [`apps/video-api`](apps/video-api) | Programmatic video rendering API | Node.js, TypeScript, FFmpeg, Fastify | Modal / Railway |
+| [`apps/epub-api`](apps/epub-api) | EPUB → PDF conversion API | Node.js, TypeScript, Playwright, Fastify | Google Cloud Run / Railway |
 
 Each app is independently deployable — its own `package.json`, `Dockerfile`,
-and README with deploy instructions.
+`railway.json`, and README with deploy instructions.
 
 ## Domain
 
@@ -23,3 +24,4 @@ Apps are served under `tool5.store`, one subdomain per app:
 
 - `capture.tool5.store` → capture-api
 - `render.tool5.store` → video-api
+- `epub.tool5.store` → epub-api
