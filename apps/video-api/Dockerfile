@@ -9,22 +9,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-# See apps/capture-api/Dockerfile for the full story: some build hosts
-# (observed on Railway) inject a registry config via environment variable
-# that outranks anything `npm config set` writes to .npmrc, making even
-# public `npm ci` calls fail with a 401. Pin it as an ENV (which npm
-# respects directly) and as an explicit --registry flag (npm's highest-
-# precedence config source) on every install.
-ENV NPM_CONFIG_REGISTRY=https://registry.npmjs.org/
-ENV NPM_CONFIG__AUTH=
-ENV NPM_CONFIG__AUTHTOKEN=
-
 COPY package.json package-lock.json* ./
-RUN npm ci --omit=dev --registry=https://registry.npmjs.org/ \
-    || npm install --omit=dev --registry=https://registry.npmjs.org/
+RUN npm ci --omit=dev || npm install --omit=dev
 
 FROM base AS build
-RUN npm install --registry=https://registry.npmjs.org/
+RUN npm install
 COPY tsconfig.json ./
 COPY src ./src
 RUN npm run build

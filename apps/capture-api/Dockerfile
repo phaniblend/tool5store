@@ -2,36 +2,27 @@
 # (fonts, codecs, etc.) already installed, which is the single biggest
 # source of pain when containerizing Playwright yourself. Pin to a
 # specific version so the browser build always matches the npm package.
-FROM mcr.microsoft.com/playwright:v1.49.0-jammy AS base
+FROM mcr.microsoft.com/playwright:v1.62.1-jammy AS base
 
 WORKDIR /app
-ENV NODE_ENV=production
-# Some build hosts (observed on Railway) inject a registry/proxy config
-# into the build environment that makes even public, unauthenticated
-# `npm ci` calls fail with a 401 — none of this repo's dependencies are
-# private, so there's nothing to actually authenticate. `npm config set`
-# alone didn't fix it (it only writes .npmrc, which environment variables
-# outrank in npm's config precedence), so this pins the registry two ways:
-# as an ENV npm respects directly, and as an explicit --registry flag on
-# the install commands themselves, npm's highest-precedence config source.
-ENV NPM_CONFIG_REGISTRY=https://registry.npmjs.org/
-ENV NPM_CONFIG__AUTH=
-ENV NPM_CONFIG__AUTHTOKEN=
 
 COPY package.json package-lock.json* ./
-RUN npm ci --omit=dev --registry=https://registry.npmjs.org/ \
-    || npm install --omit=dev --registry=https://registry.npmjs.org/
+RUN npm ci --omit=dev || npm install --omit=dev
 
 COPY tsconfig.json ./
 COPY src ./src
 
 # Dev deps needed for the TS build only; installed then discarded from the
-# final layer set by using a build stage.
+# final layer set by using a build stage. NODE_ENV is deliberately NOT
+# set to production until the runtime stage below — npm treats
+# NODE_ENV=production as an implicit --omit=dev, which would silently
+# skip installing typescript here and fail the build with "tsc: not
+# found" (this bit us for real, not hypothetically).
 FROM base AS build
-RUN npm install --registry=https://registry.npmjs.org/
+RUN npm install
 RUN npm run build
 
-FROM mcr.microsoft.com/playwright:v1.49.0-jammy AS runtime
+FROM mcr.microsoft.com/playwright:v1.62.1-jammy AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=base /app/node_modules ./node_modules

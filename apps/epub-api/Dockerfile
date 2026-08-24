@@ -1,32 +1,25 @@
 # Same base as apps/capture-api and for the same reason: ships Chromium +
 # all OS-level deps (fonts, codecs) already installed. Pin to a specific
 # version so the browser build always matches the npm package.
-FROM mcr.microsoft.com/playwright:v1.49.0-jammy AS base
+FROM mcr.microsoft.com/playwright:v1.62.1-jammy AS base
 
 WORKDIR /app
-ENV NODE_ENV=production
-# See apps/capture-api/Dockerfile for the full story: some build hosts
-# (observed on Railway) inject a registry config via environment variable
-# that outranks anything `npm config set` writes to .npmrc, making even
-# public `npm ci` calls fail with a 401. Pin it as an ENV (which npm
-# respects directly) and as an explicit --registry flag (npm's highest-
-# precedence config source) on every install.
-ENV NPM_CONFIG_REGISTRY=https://registry.npmjs.org/
-ENV NPM_CONFIG__AUTH=
-ENV NPM_CONFIG__AUTHTOKEN=
 
 COPY package.json package-lock.json* ./
-RUN npm ci --omit=dev --registry=https://registry.npmjs.org/ \
-    || npm install --omit=dev --registry=https://registry.npmjs.org/
+RUN npm ci --omit=dev || npm install --omit=dev
 
 COPY tsconfig.json ./
 COPY src ./src
 
+# NODE_ENV is deliberately NOT set to production until the runtime stage
+# below — see apps/capture-api/Dockerfile: npm treats
+# NODE_ENV=production as an implicit --omit=dev, which silently skips
+# installing typescript here and fails the build with "tsc: not found".
 FROM base AS build
-RUN npm install --registry=https://registry.npmjs.org/
+RUN npm install
 RUN npm run build
 
-FROM mcr.microsoft.com/playwright:v1.49.0-jammy AS runtime
+FROM mcr.microsoft.com/playwright:v1.62.1-jammy AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=base /app/node_modules ./node_modules
