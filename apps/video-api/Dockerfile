@@ -9,18 +9,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-# See apps/capture-api/Dockerfile for why this is needed: some build
-# hosts (observed on Railway) inject a registry/auth config that makes
-# even public `npm ci` calls fail with a 401. `always-auth` is
-# deliberately NOT set — npm 9+ removed it as a valid global config key,
-# and setting it fails the build outright.
-RUN npm config set registry https://registry.npmjs.org/
+# See apps/capture-api/Dockerfile for the full story: some build hosts
+# (observed on Railway) inject a registry config via environment variable
+# that outranks anything `npm config set` writes to .npmrc, making even
+# public `npm ci` calls fail with a 401. Pin it as an ENV (which npm
+# respects directly) and as an explicit --registry flag (npm's highest-
+# precedence config source) on every install.
+ENV NPM_CONFIG_REGISTRY=https://registry.npmjs.org/
+ENV NPM_CONFIG__AUTH=
+ENV NPM_CONFIG__AUTHTOKEN=
 
 COPY package.json package-lock.json* ./
-RUN npm ci --omit=dev || npm install --omit=dev
+RUN npm ci --omit=dev --registry=https://registry.npmjs.org/ \
+    || npm install --omit=dev --registry=https://registry.npmjs.org/
 
 FROM base AS build
-RUN npm install
+RUN npm install --registry=https://registry.npmjs.org/
 COPY tsconfig.json ./
 COPY src ./src
 RUN npm run build

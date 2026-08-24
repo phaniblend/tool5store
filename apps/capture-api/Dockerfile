@@ -6,17 +6,21 @@ FROM mcr.microsoft.com/playwright:v1.49.0-jammy AS base
 
 WORKDIR /app
 ENV NODE_ENV=production
-# Pin the registry explicitly: some build hosts (observed on Railway)
-# inject a registry/proxy config into the build environment that makes
-# even public, unauthenticated `npm ci` calls fail with a 401. None of
-# this repo's dependencies are private, so there's nothing to actually
-# authenticate. (Note: `always-auth` is NOT set here — npm 9+, which this
-# base image ships, removed it as a valid global config key entirely;
-# setting it fails the build outright rather than being a no-op.)
-RUN npm config set registry https://registry.npmjs.org/
+# Some build hosts (observed on Railway) inject a registry/proxy config
+# into the build environment that makes even public, unauthenticated
+# `npm ci` calls fail with a 401 — none of this repo's dependencies are
+# private, so there's nothing to actually authenticate. `npm config set`
+# alone didn't fix it (it only writes .npmrc, which environment variables
+# outrank in npm's config precedence), so this pins the registry two ways:
+# as an ENV npm respects directly, and as an explicit --registry flag on
+# the install commands themselves, npm's highest-precedence config source.
+ENV NPM_CONFIG_REGISTRY=https://registry.npmjs.org/
+ENV NPM_CONFIG__AUTH=
+ENV NPM_CONFIG__AUTHTOKEN=
 
 COPY package.json package-lock.json* ./
-RUN npm ci --omit=dev || npm install --omit=dev
+RUN npm ci --omit=dev --registry=https://registry.npmjs.org/ \
+    || npm install --omit=dev --registry=https://registry.npmjs.org/
 
 COPY tsconfig.json ./
 COPY src ./src
@@ -24,7 +28,7 @@ COPY src ./src
 # Dev deps needed for the TS build only; installed then discarded from the
 # final layer set by using a build stage.
 FROM base AS build
-RUN npm install
+RUN npm install --registry=https://registry.npmjs.org/
 RUN npm run build
 
 FROM mcr.microsoft.com/playwright:v1.49.0-jammy AS runtime
