@@ -7,9 +7,9 @@ WORKDIR /app
 ENV NODE_ENV=production
 # See apps/capture-api/Dockerfile: some build hosts (observed on Railway)
 # inject a registry/auth config that makes even public npm ci calls fail
-# with a 401. Pinning the registry sidesteps it.
-RUN npm config set registry https://registry.npmjs.org/ \
-    && npm config set always-auth false
+# with a 401. Pinning the registry sidesteps it. `always-auth` is
+# deliberately NOT set — npm 9+ removed it as a valid global config key.
+RUN npm config set registry https://registry.npmjs.org/
 
 COPY package.json package-lock.json* ./
 RUN npm ci --omit=dev || npm install --omit=dev

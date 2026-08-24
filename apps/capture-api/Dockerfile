@@ -6,13 +6,14 @@ FROM mcr.microsoft.com/playwright:v1.49.0-jammy AS base
 
 WORKDIR /app
 ENV NODE_ENV=production
-# Pin the registry explicitly and disable always-auth: some build hosts
-# (observed on Railway) inject a registry/proxy config or a stale
-# always-auth flag into the build environment that makes even public,
-# unauthenticated `npm ci` calls fail with a 401. None of this repo's
-# dependencies are private, so there's nothing to actually authenticate.
-RUN npm config set registry https://registry.npmjs.org/ \
-    && npm config set always-auth false
+# Pin the registry explicitly: some build hosts (observed on Railway)
+# inject a registry/proxy config into the build environment that makes
+# even public, unauthenticated `npm ci` calls fail with a 401. None of
+# this repo's dependencies are private, so there's nothing to actually
+# authenticate. (Note: `always-auth` is NOT set here — npm 9+, which this
+# base image ships, removed it as a valid global config key entirely;
+# setting it fails the build outright rather than being a no-op.)
+RUN npm config set registry https://registry.npmjs.org/
 
 COPY package.json package-lock.json* ./
 RUN npm ci --omit=dev || npm install --omit=dev
