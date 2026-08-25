@@ -3,12 +3,15 @@ import { z } from "zod";
 export const ClipSchema = z.object({
   url: z.string().url("clip url must be a valid absolute URL").max(2048),
   // Where this clip begins on the OUTPUT timeline, in seconds. Clips are
-  // placed in array order; a gap between one clip's end and the next
-  // clip's declared `start` is filled with black video + silent audio so
-  // the requested start times are honored. Overlapping clips (next start
-  // earlier than previous end) are not supported in v1 — rejected with a
-  // 400 rather than silently mis-compositing.
-  start: z.number().min(0).default(0),
+  // placed in array order. Omit this to mean "immediately after the
+  // previous clip ends" — the common case of just concatenating clips
+  // back to back, with no gap, requires no `start` math from the caller.
+  // If given explicitly, a gap between the previous clip's end and this
+  // clip's `start` is filled with black video + silent audio. Overlapping
+  // clips (an explicit start earlier than where the previous clip ends)
+  // are not supported in v1 — rejected with a 400 rather than silently
+  // mis-compositing.
+  start: z.number().min(0).optional(),
   // In-point within the source file, seconds.
   trimStart: z.number().min(0).default(0),
   // Out-point within the source file, seconds. Omit to use the full
@@ -46,10 +49,16 @@ export const RenderRequestSchema = z
   .strict()
   .superRefine((data, ctx) => {
     for (let i = 1; i < data.clips.length; i++) {
-      if (data.clips[i].start < data.clips[i - 1].start) {
+      const prevStart = data.clips[i - 1].start;
+      const thisStart = data.clips[i].start;
+      // Only meaningful to compare when both are explicit — an omitted
+      // `start` means "right after the previous clip", which is always
+      // in order by construction. The real overlap check (against actual
+      // probed durations) happens later in ffmpeg.ts.
+      if (thisStart !== undefined && prevStart !== undefined && thisStart < prevStart) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: `clips[${i}].start (${data.clips[i].start}) must be >= clips[${i - 1}].start (${data.clips[i - 1].start}); clips must be given in timeline order`,
+          message: `clips[${i}].start (${thisStart}) must be >= clips[${i - 1}].start (${prevStart}); clips must be given in timeline order`,
           path: ["clips", i, "start"],
         });
       }

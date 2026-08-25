@@ -1,6 +1,7 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import { captureRoutes } from "./routes/capture.js";
+import { uiRoutes } from "./routes/ui.js";
 import { closeBrowser } from "./lib/browser.js";
 
 const PORT = Number(process.env.PORT ?? 8080);
@@ -32,6 +33,7 @@ await app.register(cors, {
 
 app.get("/healthz", async () => ({ status: "ok" }));
 
+await app.register(uiRoutes);
 await app.register(captureRoutes);
 
 app.setErrorHandler((err: Error, _request, reply) => {

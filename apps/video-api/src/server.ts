@@ -1,6 +1,7 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import { renderRoutes } from "./routes/render.js";
+import { uiRoutes } from "./routes/ui.js";
 
 const PORT = Number(process.env.PORT ?? 8080);
 const HOST = "0.0.0.0";
@@ -25,6 +26,7 @@ await app.register(cors, {
 
 app.get("/healthz", async () => ({ status: "ok" }));
 
+await app.register(uiRoutes);
 await app.register(renderRoutes);
 
 app.setErrorHandler((err: Error, _request, reply) => {

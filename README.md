@@ -16,12 +16,18 @@ under $5/month by leaning on serverless/scale-to-zero hosting.
 | [`apps/epub-api`](apps/epub-api) | EPUB → PDF conversion API | Node.js, TypeScript, Playwright, Fastify | Google Cloud Run / Railway |
 
 Each app is independently deployable — its own `package.json`, `Dockerfile`,
-`railway.json`, and README with deploy instructions.
+`railway.json`, and README with deploy instructions. Each also serves its
+own small web UI at `/` (see `src/routes/ui.ts` in each app) — the API
+isn't the only way in; a person can just open the app and use it.
+
+## Site
+
+[`site/`](site) is the tool5.store landing page — a static product
+catalog. Each card opens the corresponding app directly.
 
 ## Domain
 
-Apps are served under `tool5.store`, one subdomain per app:
-
+- `tool5.store` → `site/index.html` (the catalog)
 - `capture.tool5.store` → capture-api
 - `render.tool5.store` → video-api
 - `epub.tool5.store` → epub-api

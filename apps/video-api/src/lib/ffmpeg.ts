@@ -86,8 +86,11 @@ export function buildFilterGraph(params: {
     }
 
     // Gap filler: honor a clip's declared `start` by inserting black
-    // video + silence between the previous clip's end and this one.
-    const gap = clip.start - cumulativeEnd;
+    // video + silence between the previous clip's end and this one. An
+    // omitted `start` means "right after the previous clip" (gap = 0),
+    // which is always valid — there's nothing to check it against.
+    const declaredStart = clip.start ?? cumulativeEnd;
+    const gap = declaredStart - cumulativeEnd;
     if (gap > 0.01) {
       const vLabel = `vgap${i}`;
       const aLabel = `agap${i}`;
@@ -97,7 +100,7 @@ export function buildFilterGraph(params: {
       cumulativeEnd += gap;
     } else if (gap < -0.01) {
       throw new TimelineValidationError(
-        `clips[${i}]: start (${fmt(clip.start)}) overlaps the previous clip, which ends at ${fmt(cumulativeEnd)}s — overlapping clips are not supported`,
+        `clips[${i}]: start (${fmt(declaredStart)}) overlaps the previous clip, which ends at ${fmt(cumulativeEnd)}s — overlapping clips are not supported`,
       );
     }
 
